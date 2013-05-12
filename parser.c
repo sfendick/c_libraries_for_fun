@@ -10,14 +10,21 @@
 #include <string.h>
 #include <math.h>
 #define MAX_TOKEN_LENGTH 100
+#define MAX_INPUT_SIZE 1000
 
 char * compute(char * operator, char * args[]){
 	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
 	if(!strcmp(operator,"+")){
-		sprintf(result,"%d",atol(args[0]) + atol(args[1]));
+		sprintf(result,"%d",atol(args[1]) + atol(args[0]));
+	}
+	if(!strcmp(operator,"-")){
+		sprintf(result,"%d",atol(args[1]) - atol(args[0]));
 	}
 	if(!strcmp(operator,"*")){
-		sprintf(result,"%d",atol(args[0]) * atol(args[1]));
+		sprintf(result,"%d",atol(args[1]) * atol(args[0]));
+	}
+	if(!strcmp(operator,"/")){
+		sprintf(result,"%d",atol(args[1]) / atol(args[0]));
 	}
 	if(!strcmp(operator,"sqrt")){
 		sprintf(result,"%d",(int)sqrt(atol(args[0])));
@@ -25,10 +32,13 @@ char * compute(char * operator, char * args[]){
 	return result ;
 }
 int num_parameters(char * token){
-	printf("\nTOKEN: %s\n",token);
 	if(!strcmp(token,"+"))
 		return 2;
+	if(!strcmp(token,"-"))
+		return 2;
 	if(!strcmp(token,"*"))
+		return 2;
+	if(!strcmp(token,"/"))
 		return 2;
 	if(!strcmp(token,"sqrt"))
 		return 1;
@@ -56,7 +66,6 @@ void parse(FILE * f){
 
 				// if the token is an operator push its argument count onto the argument requirement stack
 				if(num_parameters(token) >= 0){
-					printf("found a operator");
 					int * num_required = (int *) malloc(sizeof(int));
 					int * num_actual = (int *) malloc(sizeof(int));
 					*num_required = num_parameters(token);
@@ -68,7 +77,6 @@ void parse(FILE * f){
 
 				// if the token is an argument, increment the argument count at the top of the stack
 				else{
-					printf("found an argument");
 					++(*((int*)linked_list_top(num_args)));	
 				}
 					
@@ -105,7 +113,7 @@ void parse(FILE * f){
 			++token_length;
 		}
 	}
-	printf("%s",linked_list_top(tokens));
+	printf("%s\n",linked_list_top(tokens));
 	free(linked_list_pop(tokens));
 	free(tokens);
 	free(num_args);
@@ -115,8 +123,29 @@ void parse(FILE * f){
 
 
 int main(int argc,  char * argv[]){
-	FILE * f = fopen(argv[1],"r"); 
-	parse(f);
-	fclose(f);
+	if(argc > 1){
+		FILE * f = fopen(argv[1],"r"); 
+		parse(f);
+		fclose(f);
+	}else{
+		int c;
+		char input[MAX_INPUT_SIZE + 1];
+		int i = 0;
+		while((c = getchar()) != EOF){
+			if(c != '\n'){
+				input[i] = c;	
+				++i;
+			}else{
+				input[i]= '\0';
+				FILE * f = fopen(".calc_temp","w");
+				fputs(input,f);
+				fclose(f);
+				f = fopen(".calc_temp","r");
+				parse(f);
+				i = 0;
+			}
+		}
+	}
+	
 	return(0);
 }
