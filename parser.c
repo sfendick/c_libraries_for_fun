@@ -106,6 +106,10 @@ void parse(FILE * f){
 		}
 	}
 	printf("%s",linked_list_top(tokens));
+	free(linked_list_pop(tokens));
+	free(tokens);
+	free(num_args);
+	free(required_args);
 
 }
 
@@ -113,5 +117,6 @@ void parse(FILE * f){
 int main(int argc,  char * argv[]){
 	FILE * f = fopen(argv[1],"r"); 
 	parse(f);
+	fclose(f);
 	return(0);
 }

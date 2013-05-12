@@ -90,6 +90,7 @@ int linked_list_size(linked_list * l){
 	return(1 + linked_list_size(l->next));
 }
 
+/*
 // Pseudo Unit Testing
 int main(){
 	
@@ -173,4 +174,4 @@ int main(){
 	linked_list_delete(l);
 	return(0);
 }
-
+*/
