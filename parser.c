@@ -1,10 +1,12 @@
 // File:	parser.c
 // Author:	Tom Shehan
 // Description:	A prefix calculator supporting addition, multiplication, and sqare root over ONLY INTEGERS	
+// Note:	Although the program is still sloppy, it is much improved fundamentally.
 //
-// Note:	I know this is quite bad. Don't hold it against me. The parser is not theoretically sound, 
-// 		and has a couple of "extra features". Also, poorly formed equations cause segfaults. These
-// 		will be the next things to be changed now that floating point arithmetic works.
+// TODO:	see if conditional statements can be simplified to a state machine
+// 		fix newly introduced memory leaks
+//		make the error detection cleaner
+//		review for potenntial errors
 
 #include "linked_list.c"
 #include <stdio.h>
@@ -129,6 +131,7 @@ char * square_root(char * args[]){
 
 
 char * compute(char * operator, char * args[]){
+
 	if(!strcmp(operator,"+")){
 		return add(args);
 	}
@@ -145,102 +148,148 @@ char * compute(char * operator, char * args[]){
 		return square_root(args);
 	}
 }
-int num_parameters(char * token){
-	if(!strcmp(token,"+"))
+
+int required_arguments(char * operator){
+
+	if(!strcmp(operator,"+")){
 		return 2;
-	if(!strcmp(token,"-"))
+	}
+	if(!strcmp(operator,"-")){
 		return 2;
-	if(!strcmp(token,"*"))
+	}
+	if(!strcmp(operator,"*")){
 		return 2;
-	if(!strcmp(token,"/"))
+	}
+	if(!strcmp(operator,"/")){
 		return 2;
-	if(!strcmp(token,"sqrt"))
+	}
+	if(!strcmp(operator,"sqrt")){
 		return 1;
-	return -1;	
+	}
 
 }
 
+char * parse(FILE  * f){
 
-void parse(FILE * f){
-	int c ;
+	int	c ;				// current scanned character
+	char	token[MAX_TOKEN_LENGTH];	// current token being built
+	int	token_length = 0;		// index in the token for next character
+	char *	error = (char*)malloc(MAX_TOKEN_LENGTH);	// error message
+		
+	linked_list * tokens = linked_list_new();	// the entire stack of tokens
+	linked_list * arguments = linked_list_new();	// the arguments for a single operation being executed
 
-	char token[100];
-	int token_length = 0;
+	while((c = fgetc(f)) != EOF){	
 
-	linked_list * tokens = linked_list_new();
-	linked_list * num_args = linked_list_new(); 
-	linked_list * required_args = linked_list_new(); 
+		// if the current character is not whitespace, or a parenthesis, add it to the current token
+		if(c != ' ' && c != '\n' && c != '\t' && c != '(' && c != ')'){
+			token[token_length] = c;
+			++token_length;
 
-	while((c = fgetc(f)) != EOF){
-		if(c == ' ' || c == '\n' || c == '\t' || c == '(' || c == ')'){
-			token[token_length] = '\0';
+		// otherwise, push the token on the stack as-is. We will deal with the current character in a moment 
+		}else{
+
+			// push only if not an empty token
 			if(token_length > 0){
-				// push the token onto the token stack
-				linked_list_push(tokens, strcpy((char *) malloc(sizeof(token)),token));
+				token[token_length] = '\0';
+				char * token_copy = (char *) malloc(token_length + 1);
+				strcpy(token_copy,token);
+				linked_list_push(tokens,token_copy);	
+				token_length = 0 ;
+			}
 
-				// if the token is an operator push its argument count onto the argument requirement stack
-				if(num_parameters(token) >= 0){
-					int * num_required = (int *) malloc(sizeof(int));
-					int * num_actual = (int *) malloc(sizeof(int));
-					*num_required = num_parameters(token);
-					*num_actual = 0;
-					linked_list_push(required_args, num_required);
-					linked_list_push(num_args,num_actual);
-				}
+			// if the current character is an opening parenthesis, push it on the token stack
+			if(c == '('){
+				char * new_token = (char *) malloc(2);
+				new_token[0] = c;
+				new_token[1] = '\0';
+				linked_list_push(tokens,new_token);
 
+			// if the current character is a closing parenthesis, dont bother pushing it on the stack, just evaluate
+			}else if(c == ')'){
+				
 
-				// if the token is an argument, increment the argument count at the top of the stack
-				else{
-					++(*((int*)linked_list_top(num_args)));	
-				}
-					
-				// if the required argument count is reached, pop the arguments off their stack, pop the argument count off its stack, and replace the operator token with the result of evaluation. then check whether the argument count is reached again... this should either be recursive or (while argcount ....)
-				while(*((int *)linked_list_top(num_args)) == *((int *)linked_list_top(required_args))){
-					int arg_count;
-					arg_count = *((int *)linked_list_top(required_args));
-					char * args[arg_count];
-					int i;
-					for(i = 0; i < arg_count ; i++){
-						args[i] = linked_list_pop(tokens);
-					}
-					char * operator = linked_list_pop(tokens);
-					linked_list_push(tokens,compute(operator,args));
+					// catch extra closing parenthesis error
+					if(linked_list_top(tokens)==NULL){
+						sprintf(error,"Error: extra closing parenthesis");
+						return(error);
+					}	
 
-					free(linked_list_pop(num_args));
-					free(linked_list_pop(required_args));
-					free(operator);
-					for(i = 0; i < arg_count ; i++ ){
-						free(args[i]);
-					}
-					// if the last thing has been popped off just break out
-					if(linked_list_top(num_args) == NULL){
-						break;
+					// put the arguments in their own stack and count them. stop when a opening parenthesis is reached
+					int arg_count = -1 ;
+					while(*((char *) linked_list_top(tokens)) != '('){
+						linked_list_push(arguments,linked_list_pop(tokens));	
+						++arg_count;
 					}
 
-					++(*((int *)linked_list_top(num_args)));
-				}
+					// catch empty parenthesis
+					if(arg_count == -1){
+						sprintf(error,"Error: No function name supplied.");
+						return(error);
+					}
+
+					char * operator = (char *) linked_list_pop(arguments); // the top "argument" is actually the operator
+
+					// catch too few or too many arguments
+					if(arg_count <  required_arguments(operator)){
+						sprintf(error,"Error: Not enough arguments for %s", operator);
+						return(error);
+					}else if(arg_count > required_arguments(operator)){
+						sprintf(error,"Error: Too many arguments for %s", operator);
+						return(error);
+					}
+
+
+					free(linked_list_pop(tokens));	// free the closing parenthesis
+
+					// transfer the arguments to an array to get them in the correct order	
+					char * arg_array[arg_count];
+					int i = 0;
+					while(i < arg_count){
+						arg_array[i] = linked_list_pop(arguments) ;
+						++i;
+					}
+
+
+					// perform the actual operation and push the result onto the token stack
+					linked_list_push(tokens,compute(operator, arg_array)); 
+
+
+					// free everything for this expression
+					free(operator);				// the operator
+					for(i = 0 ; i < arg_count ; i++){	// the arguments
+						free(arg_array[i]);
+					}
 				
 			}
-			token_length = 0 ;
-		}else{
-			token[token_length] = (char) c;	
-			++token_length;
 		}
-	}
-	printf("%s\n",linked_list_top(tokens));
-	free(linked_list_pop(tokens));
-	free(tokens);
-	free(num_args);
-	free(required_args);
 
-}
+
+	}
+
+	// catch no equation  error
+	if(linked_list_size(tokens) == 0){		
+		sprintf(error,"Error: No equation entered");
+		return(error);
+	}
+
+	// catch extra opening parenthesis error
+	if(*((char*)linked_list_top(tokens)) == '(' || linked_list_size(tokens) > 1){		
+		sprintf(error,"Error: Extra opening parenthesis");
+		return(error);
+	}
+
+	char * result = linked_list_top(tokens);	
+	free(tokens);
+	return result ;
+}	
 
 
 int main(int argc,  char * argv[]){
 
 	if(argc > 1){
 		FILE * f = fopen(argv[1],"r"); 
-		parse(f);
+		printf("%s\n",parse(f));
 		fclose(f);
 	}else{
 		int c;
@@ -251,12 +300,13 @@ int main(int argc,  char * argv[]){
 				input[i] = c;	
 				++i;
 			}else{
-				input[i]= '\0';
+				input[i]= '\n';
+				input[i+1]= '\0';
 				FILE * f = fopen(".calc_temp","w");
 				fputs(input,f);
 				fclose(f);
 				f = fopen(".calc_temp","r");
-				parse(f);
+				printf("%s\n",parse(f));
 				i = 0;
 			}
 		}
