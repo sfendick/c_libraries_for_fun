@@ -1,8 +1,10 @@
 // File:	parser.c
 // Author:	Tom Shehan
 // Description:	A prefix calculator supporting addition, multiplication, and sqare root over ONLY INTEGERS	
-// Note:	I know this is quite bad. Don't hold it against me. 
-// 		Do not use floating point values, or values whose results will be floating point until it is finished.
+//
+// Note:	I know this is quite bad. Don't hold it against me. The parser is not theoretically sound, 
+// 		and has a couple of "extra features". Also, poorly formed equations cause segfaults. These
+// 		will be the next things to be changed now that floating point arithmetic works.
 
 #include "linked_list.c"
 #include <stdio.h>
@@ -12,24 +14,136 @@
 #define MAX_TOKEN_LENGTH 100
 #define MAX_INPUT_SIZE 1000
 
-char * compute(char * operator, char * args[]){
+
+typedef enum{
+	INTEGER,
+	FLOAT,
+	BAD
+}token_type;
+
+
+token_type get_type(char * token){
+
+	char * end;
+
+	// see if the token is an integer
+	long num_l = strtol(token,&end,10);
+	if(*end == '\0'){
+		return INTEGER;
+	}
+
+	// see if the token is an integer
+	double num_f = strtod(token,&end);
+	if(*end == '\0'){
+		return FLOAT;
+	}	
+
+	return BAD;
+}
+
+
+char * add(char * args[]){
+	token_type t0 = get_type(args[0]);
+	token_type t1 = get_type(args[1]);
+	char * end;
 	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
+	
+	if(t0 == INTEGER && t1 == INTEGER){		
+		long a = strtol(args[1],&end,10);
+		long b = strtol(args[0],&end,10);
+		sprintf(result,"%d",a + b);
+	}else{
+		double a = strtod(args[1],&end);
+		double b = strtod(args[0],&end);
+		sprintf(result,"%f",a + b);
+	}
+	return(result);
+}
+
+char * subtract(char * args[]){
+	token_type t0 = get_type(args[0]);
+	token_type t1 = get_type(args[1]);
+	char * end;
+	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
+	
+	if(t0 == INTEGER && t1 == INTEGER){		
+		long a = strtol(args[1],&end,10);
+		long b = strtol(args[0],&end,10);
+		sprintf(result,"%d",a - b);
+	}else{
+		double a = strtod(args[1],&end);
+		double b = strtod(args[0],&end);
+		sprintf(result,"%f",a - b);
+	}
+	return(result);
+}
+
+char * multiply(char * args[]){
+	token_type t0 = get_type(args[0]);
+	token_type t1 = get_type(args[1]);
+	char * end;
+	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
+	
+	if(t0 == INTEGER && t1 == INTEGER){		
+		long a = strtol(args[1],&end,10);
+		long b = strtol(args[0],&end,10);
+		sprintf(result,"%d",a * b);
+	}else{
+		double a = strtod(args[1],&end);
+		double b = strtod(args[0],&end);
+		sprintf(result,"%f",a * b);
+	}
+	return(result);
+}
+
+char * divide(char * args[]){
+	token_type t0 = get_type(args[0]);
+	token_type t1 = get_type(args[1]);
+	char * end;
+	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
+	
+	if(t0 == INTEGER && t1 == INTEGER){		
+		long a = strtol(args[1],&end,10);
+		long b = strtol(args[0],&end,10);
+		sprintf(result,"%d",a / b);
+	}else{
+		double a = strtod(args[1],&end);
+		double b = strtod(args[0],&end);
+		sprintf(result,"%f",a / b);
+	}
+	return(result);
+}
+
+char * square_root(char * args[]){
+	char * end;
+	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
+	double a = strtod(args[0],&end);
+	sprintf(result,"%f",sqrtf(a));
+	return(result);
+}
+
+
+
+
+
+
+
+char * compute(char * operator, char * args[]){
 	if(!strcmp(operator,"+")){
-		sprintf(result,"%d",atol(args[1]) + atol(args[0]));
+		return add(args);
 	}
 	if(!strcmp(operator,"-")){
-		sprintf(result,"%d",atol(args[1]) - atol(args[0]));
+		return subtract(args);
 	}
 	if(!strcmp(operator,"*")){
-		sprintf(result,"%d",atol(args[1]) * atol(args[0]));
+		return multiply(args);
 	}
 	if(!strcmp(operator,"/")){
-		sprintf(result,"%d",atol(args[1]) / atol(args[0]));
+		return divide(args);
 	}
 	if(!strcmp(operator,"sqrt")){
-		sprintf(result,"%d",(int)sqrt(atol(args[0])));
+		return square_root(args);
 	}
-	return result ;
 }
 int num_parameters(char * token){
 	if(!strcmp(token,"+"))
@@ -123,6 +237,7 @@ void parse(FILE * f){
 
 
 int main(int argc,  char * argv[]){
+
 	if(argc > 1){
 		FILE * f = fopen(argv[1],"r"); 
 		parse(f);
