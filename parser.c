@@ -51,12 +51,12 @@ char * add(char * args[]){
 	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
 	
 	if(t0 == INTEGER && t1 == INTEGER){		
-		long a = strtol(args[1],&end,10);
-		long b = strtol(args[0],&end,10);
+		long a = strtol(args[0],&end,10);
+		long b = strtol(args[1],&end,10);
 		sprintf(result,"%d",a + b);
 	}else{
-		double a = strtod(args[1],&end);
-		double b = strtod(args[0],&end);
+		double a = strtod(args[0],&end);
+		double b = strtod(args[1],&end);
 		sprintf(result,"%f",a + b);
 	}
 	return(result);
@@ -69,12 +69,12 @@ char * subtract(char * args[]){
 	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
 	
 	if(t0 == INTEGER && t1 == INTEGER){		
-		long a = strtol(args[1],&end,10);
-		long b = strtol(args[0],&end,10);
+		long a = strtol(args[0],&end,10);
+		long b = strtol(args[1],&end,10);
 		sprintf(result,"%d",a - b);
 	}else{
-		double a = strtod(args[1],&end);
-		double b = strtod(args[0],&end);
+		double a = strtod(args[0],&end);
+		double b = strtod(args[1],&end);
 		sprintf(result,"%f",a - b);
 	}
 	return(result);
@@ -87,12 +87,12 @@ char * multiply(char * args[]){
 	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
 	
 	if(t0 == INTEGER && t1 == INTEGER){		
-		long a = strtol(args[1],&end,10);
-		long b = strtol(args[0],&end,10);
+		long a = strtol(args[0],&end,10);
+		long b = strtol(args[1],&end,10);
 		sprintf(result,"%d",a * b);
 	}else{
-		double a = strtod(args[1],&end);
-		double b = strtod(args[0],&end);
+		double a = strtod(args[0],&end);
+		double b = strtod(args[1],&end);
 		sprintf(result,"%f",a * b);
 	}
 	return(result);
@@ -105,12 +105,12 @@ char * divide(char * args[]){
 	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
 	
 	if(t0 == INTEGER && t1 == INTEGER){		
-		long a = strtol(args[1],&end,10);
-		long b = strtol(args[0],&end,10);
+		long a = strtol(args[0],&end,10);
+		long b = strtol(args[1],&end,10);
 		sprintf(result,"%d",a / b);
 	}else{
-		double a = strtod(args[1],&end);
-		double b = strtod(args[0],&end);
+		double a = strtod(args[0],&end);
+		double b = strtod(args[1],&end);
 		sprintf(result,"%f",a / b);
 	}
 	return(result);
@@ -124,6 +124,14 @@ char * square_root(char * args[]){
 	return(result);
 }
 
+char * power(char * args[]){
+	char * end;
+	char * result = (char *) malloc(MAX_TOKEN_LENGTH * sizeof(char));
+	double a = strtod(args[0],&end);
+	double b = strtod(args[1],&end);
+	sprintf(result,"%f",pow(a,b));
+	return(result);
+}
 
 
 
@@ -147,6 +155,9 @@ char * compute(char * operator, char * args[]){
 	if(!strcmp(operator,"sqrt")){
 		return square_root(args);
 	}
+	if(!strcmp(operator,"pow")){
+		return power(args);
+	}
 }
 
 int required_arguments(char * operator){
@@ -165,6 +176,9 @@ int required_arguments(char * operator){
 	}
 	if(!strcmp(operator,"sqrt")){
 		return 1;
+	}
+	if(!strcmp(operator,"pow")){
+		return 2;
 	}
 
 }
