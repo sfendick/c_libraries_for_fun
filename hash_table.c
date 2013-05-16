@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #define MULTIPLY_PRIME	178093613
 #define DEFAULT_SIZE	11
 #define MAX_CHAIN	1
@@ -35,7 +36,22 @@ hash_table * hash_table_new(){
 	l->buckets = (element **) calloc(DEFAULT_SIZE,sizeof(element *));
 	l->size = DEFAULT_SIZE;
 	l->count = 0 ;
-	
+	return l;	
+}
+
+void hash_table_delete(hash_table * t){
+	int i;
+	for(i = 0 ; i < t->size ; i++){
+		element * e = t->buckets[i];
+		while(e != NULL){
+			element * next = e->next;
+			free(e->key);
+			free(e);
+			e = next;
+		}
+	}
+	free(t->buckets);
+	free(t);
 }
 
 int hash(hash_table * t,char * key){
@@ -122,8 +138,9 @@ void hash_table_set(hash_table * t, char * key, void * item){
 
 	int h = hash(t,key);
 	element * e = (element *) malloc(sizeof(element));
+	e->key = malloc(strlen(key) + 1);
 	e->item = item;
-	e->key = key;
+	strcpy(e->key,key);
 	e->next = t->buckets[h];
 	t->buckets[h] = e;
 	++(t->count);
@@ -215,5 +232,7 @@ int main(){
 
 	printf("My full name is %s %s. I am %d years old\n",(char *)hash_table_get(h,"first_name"), (char *)hash_table_get(h,"last_name"),*((int*)hash_table_get(h,"age")));
 
+	hash_table_delete(t);
+	hash_table_delete(h);
 
 }
