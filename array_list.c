@@ -1,5 +1,5 @@
 // File:	array_list.c
-// Author:	Tom Shehan
+// Author:	Tom Shehan, Stephen Fendick
 // Description:	A simple array list (vector) implementation with no memory management of contained items
 
 #include <stdlib.h>
@@ -14,12 +14,18 @@ typedef struct{
 
 // "Constructor"
 // allocates space and creates an empty array list
-array_list * array_list_new(){
-	array_list * l = (array_list*) malloc(sizeof(array_list));
-	l->items = (void **) malloc(sizeof(void*)*DEFAULT_SIZE);
-	l->size = DEFAULT_SIZE;
-	l->count = 0;	
-	return l;
+array_list * array_list_new() {
+    array_list * l = (array_list*) malloc(sizeof(array_list));
+    if (!l) return NULL;
+
+    l->items = (void **) malloc(sizeof(void*) * DEFAULT_SIZE);
+    if (!l->items) {
+        free(l);
+        return NULL;
+    }
+    l->size = DEFAULT_SIZE;
+    l->count = 0;    
+    return l;
 }
 
 // "Destructor"
@@ -32,36 +38,43 @@ void array_list_delete(array_list * l){
 // Append
 // adds the item to the end of the array if there's room. 
 // otherwise doubles the size, copies the values, and then adds
-void array_list_append(array_list * l, void * item){
-	if(l->size > l->count){
-		l->items[l->count] = item;
-		++(l->count);
-	}else{
-		l->size *= 2;
-		void ** new_items = malloc(sizeof(void*) * (l->size));
-		int i;
-		for(i = 0; i < l->count ; i++){
-			new_items[i] = l->items[i];
-		}
-		free(l->items);
-		l->items = new_items;
-
-		l->items[l->count] = item;
-		++(l->count);
-	}
+void array_list_append(array_list * l, void * item) {
+    if (l->size > l->count) {
+        l->items[l->count++] = item;
+    } else {
+        l->size *= 2;
+        void ** new_items = malloc(sizeof(void*) * l->size);
+        if (!new_items) {
+            // Optionally, add error handling if resizing fails.
+            return;
+        }
+        for (int i = 0; i < l->count; i++) {
+            new_items[i] = l->items[i];
+        }
+        free(l->items);
+        l->items = new_items;
+        l->items[l->count++] = item;
+    }
 }
+
 
 // Remove
 // empties the given index in the array. might be an unnecessary function
-void array_list_remove(array_list * l, int n){
-	l->items[n] = NULL;	
+void array_list_remove(array_list * l, int n) {
+    if (n >= 0 && n < l->count) {
+        l->items[n] = NULL;
+    }
 }
 
 // Get
 // returns the item at position n 
-void * array_list_get(array_list * l, int n){
-	return l->items[n];	
+void * array_list_get(array_list * l, int n) {
+    if (n >= 0 && n < l->count) {
+        return l->items[n];
+    }
+    return NULL;
 }
+
 
 // Replace
 // replaces the item at position n
